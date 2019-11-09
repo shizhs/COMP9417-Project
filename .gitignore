@@ -1,4 +1,7 @@
-*
-
-!.gitignore
 !Project.ipynb
+# Mac related
+.DS_Store
+# VSCode
+.vscode
+# checkpoints
+.ipynb_checkpoints
