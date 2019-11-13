@@ -6,3 +6,5 @@ __MACOSX
 .vscode
 # checkpoints
 .ipynb_checkpoints
+# Python
+__pycache__
