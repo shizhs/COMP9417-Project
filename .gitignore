@@ -1,6 +1,7 @@
 !Project.ipynb
 # Mac related
 .DS_Store
+__MACOSX
 # VSCode
 .vscode
 # checkpoints

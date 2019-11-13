@@ -1,6 +1,7 @@
 # COMP9417 Project
 - [The thesis about StudentLife](https://github.com/z5165356/COMP9417-Project/blob/master/StudentLife_Dataset/StudentLIfe_AssessingMentalHealth.pdf)
 - [StudentLife Study](https://studentlife.cs.dartmouth.edu/)
+- [Dataset detailed description](https://studentlife.cs.dartmouth.edu/dataset.html)
 
 ## Features
 There are four features in total.
