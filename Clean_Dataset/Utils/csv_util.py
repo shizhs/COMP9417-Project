@@ -1,8 +1,13 @@
 import pandas as pd
+import numpy as np
 import glob
 
 class csv_util:
-    '''some utils for reading and writing csv'''
+    '''
+    some utils for reading and writing csv
+    - call readAll first
+    - call process and pass a function in for it
+    '''
 
     def __init__(self, path, debug = False):
         '''
@@ -20,18 +25,24 @@ class csv_util:
     def readAll(self):
         '''read and save all csv file names under that folder'''
         self.csv_files = glob.glob(self.path + '/*.csv')
-        self._log(self.csv_files)
+        # self._log(self.csv_files)
 
-        for f in self.csv_files:
-            self.readOne(f)
+    def process(self, func):
+        '''process all data'''
+        for path in self.csv_files:
+            # get uid (-4 to remove csv extension)
+            uid = path.split('_')[-1][:-4]
+            # self._log(uid)
+            csv = pd.read_csv(path)
+            percentage = func(csv)
+            self.output.append([uid, percentage])
+        self._log(self.output)
 
-    def readOne(self, path):
-        '''read one csv file and do something with it'''
-        csv = pd.read_csv(path)
-        self._log(csv)
 
-    def writeToCsv(self):
+    def writeToCsv(self, titles, csv_name):
         '''write output to a csv file'''
+        data = pd.DataFrame(np.array(self.output), columns=titles)
+        data.to_csv(csv_name, index=False)
 
     def _log(self, *args, **kwargs):
         """print if debug is true"""
