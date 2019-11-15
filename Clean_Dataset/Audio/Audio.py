@@ -11,50 +11,58 @@ def getWeek(stamp):
 
 
 def meanToString(mean, start):
-    ret = str(mean[1])
+    ret = str(mean[1]).replace(', ','|').replace('[', '').replace(']', '')
     for m in mean[2:]:
-        ret = ret + ',' + str(m)
+        ret = ret + ',' + str(m).replace(', ','|').replace('[', '').replace(']', '')
     return start + ',' + ret
-
 
 conf = SparkConf().setAppName('Shortest Path')
 sc = sc(conf=conf)
 
-inPath = './input/blue/'
+inPath = './input/audio/'
 ouPath = './result/'
 files = os.listdir(inPath)
 outputFile = []
 
 for file in files:
-    textFile = sc.textFile(inPath + file).filter(lambda s: not ('time' in s or '' == s))
-    uid = file.replace('bt_', '').split('.')[0]
-    step1 = textFile.map(lambda line: (getWeek(line.split(",")[0]), 1))
+    textFile = sc.textFile(inPath + file).filter(lambda s: not ('timestamp' in s or '' == s))
+    uid = file.replace('audio_', '').split('.')[0]
+    step1 = textFile.map(lambda line: ((getWeek(line.split(",")[0]), line.split(",")[1]), 1))
     step2 = step1.reduceByKey(lambda a, b: a + b)
     # key = step2.count()
     # value = sum(step2.values().collect())
-    dic = step2.sortByKey().collectAsMap()
-    outList = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    dic = step2.sortByKey().collectAsMap() # ((3,0), 100)
+    outList = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+               [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+               [0, 0, 0], [0, 0, 0]]
     for v in dic.keys():
-        outList[v] = dic[v]
+        outList[int(v[0])][int(v[1])] = dic[v]
     s = uid
     for i in outList[1:]:
-        s = s + ',' + str(i)
+        s = s + ',' + str(i).replace(', ','|').replace('[', '').replace(']', '')
     outputFile.append((uid, s))
-    if uid.__eq__('u05'):
-        step2.saveAsTextFile(ouPath)
-        with open('./output/u15.csv', 'w') as file1:
-            file1.write(s)
+    # if uid.__eq__('u05'):
+    #     step2.saveAsTextFile(ouPath)
+    #     with open('./output/u15.csv', 'w') as file1:
+    #         file1.write(s)
 s = ''
 
 outputFile.sort()
 
-# total = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-# mean = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+# total = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+#                [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+#                [0, 0, 0], [0, 0, 0]]
+# mean = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+#                [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
+#                [0, 0, 0], [0, 0, 0]]
 # for i in range(1, 11):
 #     for t in outputFile:
-#         total[i] += int(t[1].split(',')[i])
-#     mean[i] = str(total[i] // len(outputFile))
+#         for p in range(0, 3):
+#             total[i][p] += int(t[1].split(',')[i].split('|')[p].replace('[','').replace(']',''))
+#     for p in range(0, 3):
+#         mean[i][p] = total[i][p] // len(outputFile)
 # print(mean)
+# print(total)
 #
 # lack = []
 #
@@ -80,7 +88,7 @@ outputFile.insert(0, ('key', 'uid,week1,week2,week3,week4,week5,week6,week7,week
 
 for t in outputFile:
     s += t[1] + '\n'
-with open('./output/bluetooth.csv', 'w') as file:
+with open('./output/audio.csv', 'w') as file:
     file.write(s)
 
 
