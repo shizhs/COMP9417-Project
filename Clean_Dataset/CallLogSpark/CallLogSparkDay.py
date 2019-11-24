@@ -26,30 +26,28 @@ def meanToString(mean, start):
 conf = SparkConf().setAppName('Shortest Path')
 sc = sc(conf=conf)
 
-inPath = './input/blue/'
+inPath = './input/call_log/'
 ouPath = './result/'
 files = os.listdir(inPath)
 outputFile = []
 
 for file in files:
     textFile = sc.textFile(inPath + file).filter(lambda s: not ('time' in s or '' == s))
-    uid = file.replace('bt_', '').split('.')[0]
-    step1 = textFile.map(lambda line: (getWeek(line.split(",")[0]), [1, {getDay(line.split(",")[0])}]))
+    uid = file.replace('call_log_', '').split('.')[0]
+    step1 = textFile.map(lambda line: (getWeek(line.split(",")[2]), [1, {getDay(line.split(",")[2])}]))
     step2 = step1.reduceByKey(lambda a, b: [a[0] + b[0], a[1] | b[1]])
     # key = step2.count()
     # value = sum(step2.values().collect())
     dic = step2.sortByKey().collectAsMap()
     outList = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     for v in dic.keys():
+        if v > 10 or v < 1:
+            continue
         outList[v] = dic[v][0] // len(dic[v][1])
     s = uid
     for i in outList[1:]:
         s = s + ',' + str(i)
     outputFile.append((uid, s))
-    if uid.__eq__('u05'):
-        step2.saveAsTextFile(ouPath)
-        with open('./output/u15.csv', 'w') as file1:
-            file1.write(s)
 s = ''
 
 outputFile.sort()
@@ -86,7 +84,7 @@ outputFile.insert(0, ('key', 'uid,week1,week2,week3,week4,week5,week6,week7,week
 
 for t in outputFile:
     s += t[1] + '\n'
-with open('./output/bluetoothDay.csv', 'w') as file:
+with open('./output/call_log_spark_day.csv', 'w') as file:
     file.write(s)
 
 
