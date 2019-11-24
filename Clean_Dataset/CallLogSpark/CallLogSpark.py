@@ -1,0 +1,130 @@
+from pyspark import SparkConf
+from pyspark import SparkContext as sc
+import os
+
+
+def getWeek(stamp):
+    startStamp = 1364256000.0
+    day = (float(stamp) - startStamp) / 60 / 60 // 24 + 1
+    week = day // 7 + 1
+    return int(week)
+
+
+def meanToString(mean, start):
+    ret = str(mean[1]).replace(', ', '|').replace('[', '').replace(']', '')
+    for m in mean[2:]:
+        ret = ret + ',' + str(m).replace(', ', '|').replace('[', '').replace(']', '')
+    return start + ',' + ret
+
+
+conf = SparkConf().setAppName('Shortest Path')
+sc = sc(conf=conf)
+
+inPath = './input/call_log/'
+ouPath = './result/'
+files = os.listdir(inPath)
+outputFile = []
+
+for file in files:
+    textFile = sc.textFile(inPath + file).filter(lambda s: not (s.startswith('id,')))
+    uid = file.replace('call_log_', '').split('.')[0]
+    step1 = textFile.map(lambda line:
+                         ((getWeek(line.split(",")[2]), str(0) if len(line.split(",")) < 11 or line.split(",")[10].__eq__('') else line.split(",")[10]),
+                          {'num': 1, 'dura': 0 if len(line.split(",")) < 6 or line.split(",")[5].__eq__('') else int(line.split(",")[5])}))
+    step2 = step1.reduceByKey(lambda a, b: {'num': a['num'] + b['num'], 'dura': a['dura'] + b['dura']})
+    # key = step2.count()
+    # value = sum(step2.values().collect())
+    dic = step2.sortByKey().collectAsMap()  # ((3,0), 100)
+    outList = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+    duraList = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+    for v in dic.keys():
+        if int(v[0]) > 10 or int(v[0] < 1):
+            continue
+        print(v)
+        try:
+            outList[int(v[0])][4 if int(v[1]) > 4 else int(v[1])] = dic[v]['num']
+        except IndexError as e:
+            print(e)
+            print(v)
+            print(dic[v])
+            print(file)
+        duraList[int(v[0])][4 if int(v[1]) > 4 else int(v[1])] = dic[v]['dura']
+    s = uid
+    # for i in outList[1:]:
+    #     s = s + ',' + str(i).replace(', ', '|').replace('[', '').replace(']', '')
+
+    for i in range(1, len(outList) - 1):
+        s = s + ',' + str(outList[i][1:]).replace(', ', '|').replace('[', '').replace(']', '') \
+            + '-' + str(duraList[i][1:]).replace(', ', '|').replace('[', '').replace(']', '')
+
+    outputFile.append((uid, s))
+    # if uid.__eq__('u05'):
+    #     step2.saveAsTextFile(ouPath)
+    #     with open('./output/u15.csv', 'w') as file1:
+    #         file1.write(s)
+s = ''
+
+outputFile.sort()
+
+# total = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+#                [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+#                [0, 0, 0, 0], [0, 0, 0, 0]]
+# mean = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+#                [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
+#                [0, 0, 0, 0], [0, 0, 0, 0]]
+# for i in range(1, 11):
+#     for t in outputFile:
+#         for p in range(0, 4):
+#             total[i][p] += int(t[1].split(',')[i].split('|')[p].replace('[','').replace(']',''))
+#     for p in range(0, 4):
+#         mean[i][p] = total[i][p] // len(outputFile)
+# print(mean)
+# print(total)
+#
+# lack = []
+#
+# index = 0
+# front = outputFile[index]
+# for t in outputFile[1:]:
+#     fid = int(front[0].replace('u', ''))
+#     tid = int(t[0].replace('u', ''))
+#     while fid + 1 != tid:
+#         fid = fid + 1
+#         if fid < 10:
+#             lack.append(('u0' + str(fid), meanToString(mean, 'u0' + str(fid))))
+#         else:
+#             lack.append(('u' + str(fid), meanToString(mean, 'u' + str(fid))))
+#         print('Add a lack uid: u' + str(fid))
+#     index += 1
+#     front = outputFile[index]
+#
+# outputFile.extend(lack)
+# outputFile.sort()
+
+outputFile.insert(0, ('key', 'uid,week1,week2,week3,week4,week5,week6,week7,week8,week9,week10'))
+
+for t in outputFile:
+    s += t[1] + '\n'
+with open('./output/call_log_spark.csv', 'w') as file:
+    file.write(s)
+
+# u00,539,428,555,933,897,910,627,584,316,1533
+# u01,362,276,220,400,1002,374,298,478,339,2795
+# u02,479,936,867,1244,1168,1413,2003,1538,2515,6621
+# u03,207,363,285,165,652,288,350,341,155,0
+# u04,483,779,787,1109,1056,863,1017,682,598,0
+# u05,540,1040,969,1138,1678,2321,3211,3702,2433,42384
+# u06,394,774,810,1093,1144,1124,1238,4067,6422,9226
+# u07,847,1013,1390,1784,1486,1469,838,334,0,0
+# u08,948,693,906,1630,1365,1729,2484,4015,2174,2156
+# u09,32,513,605,860,1279,1214,2334,1647,682,4676
+# u10,837,1524,1835,2303,2083,1441,1900,1482,1752,923
+# u11,394,774,810,1093,1144,1124,1238,4067,6422,9226
+# u12,204,417,393,675,584,513,1035,916,1374,590
+# u13,202,1397,1065,1948,3039,7169,4371,54404,64120,34463
+# u14,62,835,1493,1741,1605,2344,1529,1235,1578,28179
+# u15,388,401,720,804,613,912,545,536,22,472
